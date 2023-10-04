@@ -8,7 +8,7 @@ from sklearn.utils.class_weight import compute_class_weight
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-import logging
+import os
 
 import utils
 import config
@@ -17,24 +17,17 @@ from dataset import CustomImageDataset as CID
 from model import model_get
 
 '''
-Logs will be saved in logging
-'''
-logging.basicConfig(
-    filename='training.log',  # Specify the log file name
-    level=logging.INFO,       # Set the logging level to INFO or DEBUG
-    format='%(asctime)s [%(levelname)s]: %(message)s',  # Define the log message format
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-'''
 Set to CUDA if available, otherwise use CPU
 '''
+
 if torch.cuda.is_available():
     num_gpus = torch.cuda.device_count()
     current_device = torch.cuda.get_device_name(0)
     device = torch.device("cuda")  # Set the device to GPU
+    print("Currently Using GPU")
 else:
     device = torch.device("cpu")  # Set the device to CPU
+    print("Currently Using CPU")
 
 '''
 The hyperparameters are controlled by config.py. 
@@ -43,43 +36,38 @@ num_epochs = config.Train.num_epochs
 batch_size = config.Train.batch_size
 learning_rate = config.Train.learning_rate
 num_classes = config.Model.num_classes
+
 train_transform = dataset.train_transform
 val_transform = dataset.val_transform
+train_dataset = dataset.train_dataset
+val_dataset = dataset.val_dataset
+train_loader = dataset.train_loader
+val_loader = dataset.val_loader
+scaled_class_weights = dataset.scaled_class_weights
+
 accuracy_fn = utils.accuracy_fn
+
 '''
 Class weights are calculated and then passed into the training function's loss_fn()
 '''
 
-train_dataset = CID(root_dir='data/train', transform=train_transform)
-val_dataset = CID(root_dir='data/validation', transform=val_transform)
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-total = len(train_dataset.labels)
-len0 = train_dataset.labels.count(0)
-len1 = train_dataset.labels.count(1)
-weight_for_0 = (1 / len0) * (total / 2.0)
-weight_for_1 = (1 / len1) * (total / 2.0)
-class_weight = {0: weight_for_0, 1: weight_for_1}
-scale_factor = 1.0 / class_weight[0]
-scaled_class_weights = class_weight[1] * scale_factor
-
-model = model_get(num_classes=num_classes, device=device)
-loss_fn = nn.BCEWithLogitsLoss(weight=torch.tensor(scaled_class_weights)).to(device)
-optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate)
+model = model_get(num_classes=num_classes, device=device) #Create model. Function is in model.py
+loss_fn = nn.BCEWithLogitsLoss(weight=torch.tensor(scaled_class_weights)).to(device) #Use BCE with logits, load class weights
+optimizer = torch.optim.Adam(params=model.parameters(), lr=learning_rate) #Adam optimizer w/o weight decay
 
 '''
 Initialization of train/val loss and accuracy lists
 '''
+
 train_losses = [] 
 train_accuracies = []
 val_losses = []
 val_accuracies= []
 
-epochs = config.Train.num_epochs
+epochs = config.Train.num_epochs #epochs set in config.py
 
-for epoch in tqdm(range(epochs)):
-    logging.info(f"Epoch: {epoch}\n----------")
+for epoch in range(epochs):
+    print(f"Epoch: {epoch}\n----------")
 
     train_loss, train_acc = utils.train_step(model=model,
                                              data_loader=train_loader,
@@ -102,32 +90,26 @@ for epoch in tqdm(range(epochs)):
     val_accuracies.append(val_acc)
 
 '''
-Move train/val loss and accuracy measure to CPU to be plotted
+Move train/val loss and accuracy measure to CPU to be plotted using PlotLossAcc function in utils
 '''
 train_losses = [loss.cpu().item() for loss in train_losses]
 val_losses = [loss.cpu().item() for loss in val_losses]
 train_accs = [acc.cpu().item() for acc in train_accuracies]
 val_accs = [acc.cpu().item() for acc in val_accuracies]
 
-plt.figure(figsize=(10, 5))
-plt.plot(train_losses, label='Training Loss')
-plt.plot(val_losses, label='Validation Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-plt.title('Training and Validation Loss')
-plt.savefig('loss_plot.png')
+utils.PlotLossAcc(train_losses, val_losses, train_accs, val_accs)
 
-plt.figure(figsize=(10, 5))
-plt.plot(train_accs, label='Training Accuracy')
-plt.plot(val_accs, label='Validation Accuracy')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy (%)')
-plt.legend()
-plt.title('Training and Validation Accuracy')
-plt.savefig('accuracy_plot.png')
+'''
+Export model to main folder
+'''
+
+model_info = {'model_state_dict': model.state_dict(),
+              'class_to_idx': train_dataset.class_to_idx,
+              'idx_to_class': {v: k for k, v in train_dataset.class_to_idx.items()}
+              }
 
 
+torch.save(model.state_dict(), 'model.pth')
 
-
+torch.save(model_info, 'model_info.pth')
 

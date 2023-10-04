@@ -13,24 +13,20 @@ trainable = config.Model.trainable
 This file contains:
     The MobileNetV2 architecture from torchvision.models. It uses the ImageNet pretrained weights.
     The use of the 'trainable' argument allows flexibility
-    The custom classifier that uses 3 fully connected layers and outputs to num_classes.
-    The model_get function.
+    The custom classifier that uses 2 fully connected layers and outputs to num_classes.
+    The model_get function can be used to create a model.
 '''
 class Classifier(nn.Module):
     def __init__(self, in_features, num_classes):
         super(Classifier, self).__init__()
         self.fc1 = nn.Linear(in_features, 1280)
         self.relu1 = nn.ReLU(inplace=True)
-        self.fc2 = nn.Linear(1280, 128)
-        self.relu2 = nn.ReLU(inplace=True)
-        self.fc3 = nn.Linear(128, num_classes)
+        self.fc2 = nn.Linear(1280, num_classes)
 
     def forward(self, x):
         x = self.fc1(x)
         x = self.relu1(x)
         x = self.fc2(x)
-        x = self.relu2(x)
-        x = self.fc3(x)
         return x
     
 class MobileNetV2_Model(nn.Module):
@@ -42,7 +38,7 @@ class MobileNetV2_Model(nn.Module):
         for params in self.model_base.parameters():
             params.requires_grad = False
 
-        self.classifier = Classifier(1000, num_classes)
+        self.classifier = Classifier(1000, num_classes) #Replaces classifier with the custom Classifier()
 
     def forward(self, x):
         x = self.model_base(x)
