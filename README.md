@@ -9,4 +9,4 @@ The validation accuracy of the model is 98.3%. To test the classification perfor
 If you have any comments or suggestions about the repo, feel free to let me know.
 
 ## Example Use:
-![Logo](inference_app.png)
+![Logo](Example.png)
