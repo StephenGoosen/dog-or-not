@@ -1,19 +1,11 @@
+# train.py
+
 import torch
 import torch.nn as nn
-from torchvision import transforms
-import torchvision.transforms as transforms
-from torch.utils.data import DataLoader
-from torch.utils.data import Dataset
-from sklearn.utils.class_weight import compute_class_weight
-from tqdm import tqdm
-import matplotlib.pyplot as plt
-
-import os
 
 import utils
 import config
 import dataset
-from dataset import CustomImageDataset as CID
 from model import model_get
 
 '''

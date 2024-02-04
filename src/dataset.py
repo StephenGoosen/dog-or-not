@@ -1,3 +1,5 @@
+# dataset.py
+
 from PIL import Image
 from torchvision import transforms
 from torch.utils.data import Dataset
@@ -5,7 +7,6 @@ from torch.utils.data import DataLoader
 
 import os
 
-import utils
 import config
 
 image_size = config.Data.image_size
@@ -77,19 +78,19 @@ val_transform = transforms.Compose([
 
 '''
 These datasets set up the data to be loaded in batches of batch_size.
-'''
+
 
 train_dataset = CustomImageDataset(root_dir='data/train', transform=train_transform)
 val_dataset = CustomImageDataset(root_dir='data/validation', transform=val_transform)
 train_loader = DataLoader(train_dataset, batch_size=config.Train.batch_size, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=config.Train.batch_size, shuffle=False)
 
-'''
+
 The imbalance in the classes can affect quality of the model.
 If the number of class 2 imagesoutweighed the number of class 1 images,
 then classifying all images as 2 would achieve a high accuracy and would likely not converge.
 scaled_class_weights is used in the loss function "weight" argument. 
-'''
+
 
 total = len(train_dataset.labels)
 len0 = train_dataset.labels.count(0)
@@ -99,3 +100,4 @@ weight_for_1 = (1 / len1) * (total / 2.0)
 class_weight = {0: weight_for_0, 1: weight_for_1}
 scale_factor = 1.0 / class_weight[0]
 scaled_class_weights = class_weight[1] * scale_factor
+'''

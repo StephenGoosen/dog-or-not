@@ -1,5 +1,6 @@
+# inference.py
+
 import torch
-from torchvision import transforms
 from PIL import Image
 
 from dataset import val_transform
@@ -18,17 +19,17 @@ else:
 '''
 Load model architecture, weights, and info
 '''
-model_loc = "model.pth"
-model_info_loc = "model_info.pth"
 
-model = model_get(num_classes=1, device=device).to(device)
-model.load_state_dict(torch.load(model_loc))
+model_loc = "../model.pth" # Trained model Location
+
+model = model_get(num_classes=1, device=device).to(device) # Get model architecture
+model.load_state_dict(torch.load(model_loc)) # Get trained model's parameters
 
 '''
-Load Image
+Load Image to test inference on
 '''
-input_image = Image.open('puppy.jpg') #select input image
-image = val_transform(input_image).unsqueeze(0).to(device) #expected extra dimension for batch
+input_image = Image.open('../doggie.jpg') # Select test input image
+image = val_transform(input_image).unsqueeze(0).to(device) # Expects extra dimension for batch 
 
 '''
 Make Inference
