@@ -1,6 +1,6 @@
 matplotlib
 numpy
 Pillow
-scikit_learn
+sklearn
 torch
 torchvision
